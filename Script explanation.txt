@@ -1,0 +1,355 @@
+Posture Processing Script Guide: 
+
+import posture_processing as pp
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+                                                                   Preset values 
+
+parts_list = ['Head','Back','Wing_R','Shoulder_R','Trunk','Tail_R','Beak','Chest_L','Chest_R','Tail_L','Shoulder_L','Wing_L','Tail_Center']
+fps = 240 
+
+feature_list = ['Wing_R','Wing_L','Tail_R','Tail_L']
+color_list = ['green','purple','blue','orange']
+line_types = ['-','-','--','--']
+
+kinematics_list = ['Trajectory','Velocity','Acceleration','Distance'] (Make sure matches folders)
+
+NOTE: MAKE SURE MATCHES CSV 
+
+
+NOTE: Sleap csv files should be look like "250525_YwOr_stim_control_rec13_video_top_0008.000_video_top_0008.analysis.csv"
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+                                                                    Functions
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+                                                                Process Files
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+
+1. pp.get_files()
+
+Explanation: Goes through processed csv files and creates subfolders for saving and a dataframe of all songs and their files 
+
+Inputs: 
+- path_csv_processed: path to folder containing all processed csv files
+- path_save: path to folder to save 
+- path_vid_folder: path to folder with recording and day subfolders (typically pythonworkspace)
+
+Returns:
+- dataframe with the date, recording number, song_number, file, and folder path to save plots to, path to frames, and path to the specific video
+
+Example: df_files = pp.get_files(path_csv_processed, path_save)
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+2. pp.get_frames()
+
+Explanation: Loads each video and frames from each, saves frames into video subfolder
+
+Inputs:
+- df_files: dataframe with files and filepaths for each recording, output of function pp.get_files()
+- need_frames: set as True if you need to extract frame images and save them, False if you don't. (optional)
+
+Returns:
+- No returns, saves frame images to specified subfolder 
+
+Example: pp.plot_kinematics(df_files)
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+3. pp.extract_coords()
+
+Explanation: Extracts coordinates from cleaned csv file and filters the data
+
+Inputs: 
+- csv_path: path to csv file 
+- parts_list: parts list that matches csv labels (optional)
+- fps: fps of video - typically set at 240 (optional)
+- MEDIAN_WINDOW: parameter to filter data, higher value = stronger filter (optional)
+- GAUSSIAN_WINDOW: parameter to filter data, higher value = stronger filter (optional)
+- GAUSSIAN_SIGMA: parameter to filter data, higher value = stronger filter (optional)
+
+Returns:
+- dataframe with raw coordinates for each body part 
+- dataframe with gaussian and median filtered smoothed out coordinates for each body part 
+
+Example: df_raw_coords, df_smooth_coords = pp.extract_coords(path_csv,parts_list = [Wing, Head, Beak], fps = 240 )
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+                                Process coordinates from video - not relative to anything
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+
+4. pp.calc_kinematics()
+
+Explanation: Calculates different kinematics from coordinate dataframes 
+
+Inputs:
+- df_coords: dataframe of coordinates for each body part, can be smooth or raw
+- parts_list: parts list that matches csv labels (optional)
+- fps: fps of video - typically set at 240 (optional)
+
+Returns:
+- dataframe with velocity and acceleration calculated for each body part 
+
+Example: df_kinematics = pp.calc_kinematics(df_coords, parts_list = parts_list, fps=fps)
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+5. pp.plot_kinematics()
+
+Explanation: Plots and saves trajectory, velocity, acceleration, and jerk plots for each body part 
+
+Inputs:
+- df_kinematics: dataframe with kinematics for each body part
+- df_coords: dataframe of coordinates for each body part
+- path_to_plots: path to folder with subfolders to save plots
+- fps: fps of video - typically set at 240 (optional)
+- parts_list: parts list that matches csv labels (optional)
+- want_time - set as True if you want the x_axis to be time (s) instead of frames (optional)
+- show_plot - set to True if you want to show each plot in the output (optional)
+
+Returns:
+- No returns, saves plots to specified subfolder 
+
+Example: pp.plot_kinematics(df_kinematics, df_coords,path_to_plots, fps = fps, parts_list = parts_list,want_time = False, show_plot = False)
+
+NOTE: Make sure subfolders in plots match the dataframe. Make sure to adjust script and create new plot subolder if you want to add a new kinematic analysis graph
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+                                                                Finding Wingspread
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+
+6. pp.distance_from_midline()
+
+Explanaition: Calculates and filters distance of body parts to the midline over the video (wingspread)
+
+Inputs:
+- df_coords: dataframe of coordinates for each body part (raw)
+- save_path: path to save distance plot
+- MEDIAN_WINDOW: parameter to filter data, higher value = stronger filter (optional)
+- GAUSSIAN_WINDOW: parameter to filter data, higher value = stronger filter (optional)
+- GAUSSIAN_SIGMA: parameter to filter data, higher value = stronger filter (optional)
+
+Returns:
+- dataframe of unfiltered distances of each part from midline 
+- dataframe of filtered distances of each part from midline 
+
+Example: df_raw_dist, df_filtered_dist = pp.distance_from_midline(df_coords, save_path, MEDIAN_WINDOW = MEDIAN_WINDOW, GAUSSIAN_WINDOW = GAUSSIAN_WINDOW, GAUSSIAN_SIGMA = GAUSSIAN_SIGMA)
+
+NOTE: feature_list, color_list, and line_types MUST have same length. feature_list preset to wings and tails 
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+7. pp.plot_distances()
+
+Explanation: Plots and saves distance of body parts to the midline over the video (wingspread) 
+
+Inputs:
+- df_dist: dataframe of filtered distances
+- save_path: path to save distance plot
+- feature_list: list of features you want to calculate their distance from the midline - preset to wings and tail (optional)
+- color_list: list of different colors to plot distances (optional)
+- line_types: list of line styles to plot distances (optional)
+- want_time: set as True if you want x-axis to be time (s) (optional)
+- want_combo: set as True if you want a combined distance plot with all features (optional)
+- show_plot: set as True if you want to show plot in output (optional)
+
+
+Returns:
+- No returns, saves plots to specified subfolder 
+
+Example: pp.plot_distances(df_dist, save_path ,path_to_plots, feature_list=feature_list, color_list=color_list, line_types = line_types,want_time=False, want_combo = False, show_plot = False)
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+                                        Processs Kinematics Relavent to Wingspread (WS)
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+
+7. pp.calc_WS_kinematics()
+
+Explanation: Calculates different kinematics of wingspread, relative distance of wings to the midline 
+
+Inputs:
+- df_dist_filtered: dataframe of filtered distances to midline 
+- feature_list: parts list that matches df_dist labels (optional)
+- fps: fps of video - typically set at 240 (optional)
+
+Returns:
+- dataframe with wingspread velocity, acceleration, and jerk calculated for each body part relative to midline
+
+Example: df_kinematics = pp.calc_kinematics(df_coords, parts_list = parts_list, fps=fps)
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+8. pp.plot_WS_kinematics()
+
+Explanation: Plots and saves wingspread kinematic plots for each body part 
+
+Inputs:
+- df_kinematics: dataframe with wingspread kinematics for each body part
+
+- path_to_plots: path to folder with subfolders to save plots
+- fps: fps of video - typically set at 240 (optional)
+- parts_list: parts list that matches csv labels (optional)
+- want_time: set as True if you want the x_axis to be time (s) instead of frames (optional)
+- show_plot: set to True if you want to show each plot in the output (optional)
+
+Returns:
+- No returns, saves plots to specified subfolder 
+
+Example: pp.plot_kinematics(df_kinematics,path_to_plots, fps = fps, parts_list = parts_list,want_time = False, show_plot = False)
+
+NOTE: Make sure subfolders in plots match the dataframe. Make sure to adjust script and create new plot subolder if you want to add a new kinematic analysis graph
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+8. pp.combo_plots()
+
+Explanation: Plots and saves wingspread and kinematics for left and right wing for every individual 
+
+Inputs:
+- dict_WS: dictionary of wingspread dynamics
+- df_files: dataframe with all of the files and folder paths
+- show_plot - set to True if you want to show each plot in the output (optional)
+
+Returns:
+- No returns, saves plots to specified subfolder 
+
+Example: pp.combo_plots(dict_WS, df_files, show_plot = False)
+
+NOTE: Make sure subfolders in plots match the dataframe. Make sure to adjust script and create new plot subolder if you want to add a new kinematic analysis graph
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+9. pp.WS_avg()
+
+Explanation: Creates dataframe containing time, distance, velocity, acceleration, and jerk for a given wing or average of both wings
+
+Inputs: 
+- df_dist: dataframe of filtered distances to midline 
+- df_WS_kinematics: dataframe with wingspread kinematics (from distances) for each body part
+- wing: specify which wing you want (can be "Left", "Right', or "Avg"
+
+Returns:
+- dataframe with wingspread, velocity, acceleration, and jerk calculated for the given wing or average
+
+Example: df_WS = pp.WS_avg(df_dist, df_WS_kin, wing = 'Left')
+
+NOTE: wing input cannot be left blank 
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+10. pp.WS_stats()
+
+Explanation: Calculates different aspects of the wingspread and saves it into a dictionary 
+
+Inputs: 
+- df_WS_avg: dataframe with wingspread and kinematics for a given wing or average 
+- wing: specify which wing you want (can be "Left", "Right', or "Avg"
+
+Returns:
+- dictionary with the different stats of the wingspread, split into major sections - Timings, Peak_WS, and Kinematics 
+
+Example: dict_WS = pp.WS_stats(df_WS, wing = 'Left')
+
+NOTE: wing input must agree with the WS_avg() function
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+11. pp.find_pumps()
+
+Explanation: Finds pumps and stats of those pumps in the wingspread
+
+Inputs: 
+- df_WS_avg: dataframe with wingspread and kinematics for a given wing or average 
+- wing: specify which wing you want (can be "Left", "Right', or "Avg"
+- want_peaks: set as 'True' if you want to return the peak and trough values as well as the dictionary (optional)
+
+Returns:
+- dictionary with the different stats of the pumps, split into major sections - Frames, Duration, and Kinematics 
+- peaks - frames/index of all of the local peaks in the trace
+- troughs - frames/index of all of the troughs in the trace 
+
+
+Example: dict_pumps = pp.find_pumps(df_WS, wing = 'Left', want_peaks = False)
+
+NOTE: wing input must agree with the WS_avg() function
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+                                                            Troubleshooting
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+12. pp.show_frame()
+
+Explanaition: Shows image of specified frame
+
+Inputs:
+- df_files: dataframe with files and filepaths for each recording, output of function pp.get_files()
+- desired_frame: the frame you want to see
+- date: the date of the recording (in the style of yr-mo-day, example - 250525)
+- recording: recording number
+- song: song number
+
+Returns: No returns, just shows image 
+
+NOTE: All inputs are numbers (integers) with no leading 0s, image will disappear with any key click
+
+
+Example: pp.show_frame(df_files, desired_frame = 200, date = 250525, recording = 13, song = 8)
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+13. pp.check_vid()
+
+Explanaition: To create video clip of desired frames as a proofreading mechanism
+
+Inputs:
+- start_frame: start frame you want
+- end_frame: end frame you want
+- path_frame_folder: path to the folder of the frames to your specific video, (can access by indexing df_files)
+- output_path: path where you want to save the video 
+
+Returns: No returns, just saves video at specified folder 
+
+Example: pp.check_vid(125,782,df_files['Frame_path'][1],path_plots)
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+                                                        General Functions
+
+14. pp.rescale()
+
+Explanaition: Rescales array to new scale 
+
+Inputs:
+- array: Original array you want rescaled 
+- new_min: minimum value to rescale to 
+- new_max: maximum value to rescale to
+
+Returns: rescaled array 
+
+Example:  pp.rescale(array, new_min, new_max)
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+14. pp.pad_list()
+
+Explanaition: pads multiple lists to the length of the longest list with NaNs
+
+Inputs:
+- lists: list of multiple lists
+
+Returns: List padded to the same lengths 
+
+Example:  pp.rescale(array, new_min, new_max)
